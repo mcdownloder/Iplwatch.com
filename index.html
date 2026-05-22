@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL Arena Pro | Real-time Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom App-wide Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262626; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #404040; 
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes pulse-highlight {
+            0%, 100% { background-color: rgba(245, 158, 11, 0.0); }
+            50% { background-color: rgba(245, 158, 11, 0.15); }
+        }
+
+        .live-pulse-row {
+            animation: pulse-highlight 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 font-sans tracking-wide">
+
+    <nav class="bg-neutral-900 border-b border-neutral-850 sticky top-0 z-50 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-tr from-amber-500 to-orange-600 p-2 rounded-lg">
+                        <i class="fa-solid fa-bolt text-neutral-950 text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-black tracking-tighter bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-500 bg-clip-text text-transparent">IPL ARENA PRO</span>
+                </div>
+                <div class="flex space-x-1 bg-neutral-950 p-1 rounded-xl border border-neutral-850 overflow-x-auto max-w-full">
+                    <button id="nav-live" class="nav-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-neutral-950 shadow-lg transition">
+                        <i class="fa-solid fa-satellite-dish mr-1 animate-pulse"></i>Live Score
+                    </button>
+                    <button id="nav-table" class="nav-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white transition">
+                        <i class="fa-solid fa-table-list mr-1"></i>Match Table
+                    </button>
+                    <button id="nav-highlights" class="nav-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-neutral-400 hover:text-white transition">
+                        <i class="fa-solid fa-clapperboard mr-1"></i>Highlights
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <section id="live-scores-section" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-850 pb-4">
+                <div>
+                    <h2 class="text-2xl font-black flex items-center gap-2">
+                        <span class="flex h-2.5 w-2.5 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                        </span>
+                        Live Match Center
+                    </h2>
+                </div>
+                <div class="bg-neutral-900 border border-neutral-850 px-3 py-1.5 rounded-lg text-xs font-mono text-amber-400" id="live-ticker">
+                    SYNCING STREAM CLOCK...
+                </div>
+            </div>
+            
+            <div id="live-score-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <section id="table-section" class="space-y-6 hidden">
+            <div class="border-b border-neutral-850 pb-4">
+                <h2 class="text-2xl font-black flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-amber-500"></i>
+                    Tournament Match Matrix
+                </h2>
+                <p class="text-xs text-neutral-400 mt-1">Full breakdown ledger of past results and scheduled playoff lineups.</p>
+            </div>
+            
+            <div class="bg-neutral-900 border border-neutral-850 rounded-xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-neutral-950 border-b border-neutral-850 text-neutral-400 text-xs font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">Match / Venue</th>
+                                <th class="p-4">Innings 1</th>
+                                <th class="p-4">Innings 2</th>
+                                <th class="p-4">Status / Outcome</th>
+                            </tr>
+                        </thead>
+                        <tbody id="match-table-body" class="divide-y divide-neutral-850"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="highlights-section" class="space-y-6 hidden">
+            <div class="border-b border-neutral-850 pb-4">
+                <h2 class="text-2xl font-black flex items-center gap-2">
+                    <i class="fa-solid fa-play text-orange-500"></i>
+                    Streaming Replays & Highlights
+                </h2>
+            </div>
+            <div id="highlights-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+    </main>
+
+    <div id="video-modal" class="fixed inset-0 bg-neutral-950/90 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-neutral-900 rounded-xl max-w-4xl w-full overflow-hidden border border-neutral-850 relative shadow-2xl">
+            <button id="close-modal" class="absolute top-4 right-4 text-neutral-400 hover:text-white text-xl z-10 bg-neutral-950/70 w-10 h-10 rounded-full flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="aspect-video w-full">
+                <iframe id="modal-iframe" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="p-4 bg-neutral-950">
+                <h3 id="modal-title" class="text-md font-bold text-neutral-100">Video Player</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const liveMatchData = {
+            id: "live-67",
+            venue: "Rajiv Gandhi International Stadium, Hyderabad",
+            format: "IPL T20",
+            homeTeam: "Sunrisers Hyderabad (SRH)",
+            awayTeam: "Royal Challengers Bengaluru (RCB)",
+            homeScore: "255/4",
+            awayScore: "12/0",
+            homeOvers: "20.0",
+            awayOvers: "1.1",
+            status: "RCB NEED 244 RUNS TO WIN",
+            toss: "SRH won the toss & elected to bat",
+            batsmen: [
+                { name: "Virat Kohli", runs: 8, balls: 5, fours: 1, sixes: 0, sr: "160.0" },
+                { name: "Faf du Plessis", runs: 4, balls: 2, fours: 1, sixes: 0, sr: "200.0" }
+            ],
+            bowlers: [
+                { name: "Pat Cummins", overs: "1.0", maidens: 0, runs: 8, wickets: 0, econ: "8.0" },
+                { name: "Bhuvneshwar Kumar", overs: "0.1", maidens: 0, runs: 4, wickets: 0, econ: "24.0" }
+            ]
+        };
+
+        const historicalMatches = [
+            { match: "GT vs CSK", venue: "Narendra Modi Stadium", inn1: "GT 229/4 (20)", inn2: "CSK 140 (13.4)", status: "GT won by 89 runs", type: "Completed" },
+            { match: "KKR vs MI", venue: "Eden Gardens", inn1: "MI 147/8 (20)", inn2: "KKR 148/6 (18.5)", status: "KKR won by 4 wickets", type: "Completed" },
+            { match: "RR vs LSG", venue: "Sawai Mansingh Stadium", inn1: "LSG 220/5 (20)", inn2: "RR 225/3 (19.1)", status: "RR won by 7 wickets", type: "Completed" },
+            { match: "CSK vs SRH", venue: "M. A. Chidambaram Stadium", inn1: "CSK 180/7 (20)", inn2: "SRH 181/5 (19)", status: "SRH won by 5 wickets", type: "Completed" },
+            { match: "LSG vs PBKS", venue: "Ekana Stadium", inn1: "TBD", inn2: "TBD", status: "May 23 • 19:30 IST", type: "Upcoming" },
+            { match: "MI vs RR", venue: "Wankhede Stadium", inn1: "TBD", inn2: "TBD", status: "May 24 • 15:30 IST", type: "Upcoming" }
+        ];
+
+        const highlightsData = [
+            { title: "GT vs CSK Match Highlights • Record-Breaking Innings", length: "12:15", thumbnail: "https://images.unsplash.com/photo-1540747737956-37872a7e87b3?w=500&auto=format&fit=crop&q=60", url: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+            { title: "KKR vs MI Thriller • Magical Mystery Spin Defense", length: "14:40", thumbnail: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=500&auto=format&fit=crop&q=60", url: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+            { title: "RR vs LSG • Explosive Run Chase Extravaganza", length: "10:05", thumbnail: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&auto=format&fit=crop&q=60", url: "https://www.youtube.com/embed/dQw4w9WgXcQ" }
+        ];
+
+        const liveContainer = document.getElementById('live-score-container');
+        const matchTableBody = document.getElementById('match-table-body');
+        const highlightsGrid = document.getElementById('highlights-grid');
+        const videoModal = document.getElementById('video-modal');
+        const modalIframe = document.getElementById('modal-iframe');
+        const modalTitle = document.getElementById('modal-title');
+        const closeModal = document.getElementById('close-modal');
+        const liveTicker = document.getElementById('live-ticker');
+
+        const sections = {
+            'nav-live': document.getElementById('live-scores-section'),
+            'nav-table': document.getElementById('table-section'),
+            'nav-highlights': document.getElementById('highlights-section')
+        };
+
+        function renderLiveSection() {
+            liveContainer.innerHTML = `
+                <div class="lg:col-span-1 bg-neutral-900 border border-neutral-850 p-5 rounded-xl flex flex-col justify-between shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-neutral-850 pb-3 mb-4">
+                            <span class="text-xs font-bold uppercase tracking-wider text-neutral-400"><i class="fa-solid fa-map-location-dot text-amber-500 mr-1.5"></i>HYDERABAD</span>
+                            <span class="bg-red-500/10 text-red-400 text-[10px] px-2 py-0.5 rounded font-black tracking-widest border border-red-500/20 uppercase">LIVE MATCH</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-neutral-400 font-semibold mb-1">${liveMatchData.homeTeam}</p>
+                                <p class="text-2xl font-black text-neutral-100 font-mono">${liveMatchData.homeScore} <span class="text-xs text-neutral-400 font-medium">(${liveMatchData.homeOvers} ov)</span></p>
+                            </div>
+                            <div class="border-t border-neutral-850 pt-2">
+                                <p class="text-xs text-neutral-400 font-semibold mb-1">${liveMatchData.awayTeam} 🏏</p>
+                                <p class="text-2xl font-black text-amber-400 font-mono" id="live-away-score">${liveMatchData.awayScore} <span class="text-xs text-neutral-400 font-medium">(${liveMatchData.awayOvers} ov)</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-3 border-t border-neutral-850">
+                        <p class="text-xs text-neutral-400 mb-1 italic">${liveMatchData.toss}</p>
+                        <p class="text-sm font-black text-orange-500 font-mono tracking-tight" id="live-status-text">${liveMatchData.status}</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-neutral-900 border border-neutral-850 rounded-xl p-5 shadow-xl space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase text-neutral-300 border-b border-neutral-850 pb-2 mb-3"><i class="fa-solid fa-address-card mr-2 text-amber-500"></i>Current Innings Scorecard</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="bg-neutral-950 text-neutral-400">
+                                    <tr>
+                                        <th class="p-2.5 rounded-l-lg">Batsman</th>
+                                        <th class="p-2.5">R</th>
+                                        <th class="p-2.5">B</th>
+                                        <th class="p-2.5">4s</th>
+                                        <th class="p-2.5">6s</th>
+                                        <th class="p-2.5 rounded-r-lg">SR</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-850 font-mono">
+                                    ${liveMatchData.batsmen.map(b => `
+                                        <tr class="hover:bg-neutral-850/40">
+                                            <td class="p-2.5 font-sans font-medium text-neutral-200">${b.name}*</td>
+                                            <td class="p-2.5 font-bold text-amber-400" id="bat-${b.name.split(' ')[1]}-r">${b.runs}</td>
+                                            <td class="p-2.5 text-neutral-300" id="bat-${b.name.split(' ')[1]}-b">${b.balls}</td>
+                                            <td class="p-2.5 text-neutral-400">${b.fours}</td>
+                                            <td class="p-2.5 text-neutral-400">${b.sixes}</td>
+                                            <td class="p-2.5 text-neutral-400">${b.sr}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold uppercase text-neutral-300 border-b border-neutral-850 pb-2 mb-3"><i class="fa-solid fa-circle-dot mr-2 text-orange-500"></i>Bowling Figures</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="bg-neutral-950 text-neutral-400">
+                                    <tr>
+                                        <th class="p-2.5 rounded-l-lg">Bowler</th>
+                                        <th class="p-2.5">O</th>
+                                        <th class="p-2.5">M</th>
+                                        <th class="p-2.5">R</th>
+                                        <th class="p-2.5">W</th>
+                                        <th class="p-2.5 rounded-r-lg">Econ</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-850 font-mono">
+                                    ${liveMatchData.bowlers.map(bw => `
+                                        <tr class="hover:bg-neutral-850/40">
+                                            <td class="p-2.5 font-sans font-medium text-neutral-200">${bw.name}</td>
+                                            <td class="p-2.5 text-neutral-300" id="bowl-${bw.name.split(' ')[1]}-o">${bw.overs}</td>
+                                            <td class="p-2.5 text-neutral-400">${bw.maidens}</td>
+                                            <td class="p-2.5 text-neutral-300" id="bowl-${bw.name.split(' ')[1]}-r">${bw.runs}</td>
+                                            <td class="p-2.5 font-bold text-amber-400">${bw.wickets}</td>
+                                            <td class="p-2.5 text-neutral-400">${bw.econ}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTableSection() {
+            matchTableBody.innerHTML = historicalMatches.map(m => {
+                const isUpcoming = m.type === "Upcoming";
+                return `
+                    <tr class="hover:bg-neutral-900/60 transition">
+                        <td class="p-4">
+                            <p class="font-bold text-neutral-200">${m.match}</p>
+                            <p class="text-xs text-neutral-500 font-medium">${m.venue}</p>
+                        </td>
+                        <td class="p-4 font-mono text-xs text-neutral-300">${m.inn1}</td>
+                        <td class="p-4 font-mono text-xs text-neutral-300">${m.inn2}</td>
+                        <td class="p-4">
+                            <span class="text-xs px-2.5 py-1 rounded-md font-bold tracking-tight ${
+                                isUpcoming ? 'bg-neutral-800 text-neutral-400 border border-neutral-700' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            }">
+                                ${m.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderHighlightsSection() {
+            highlightsGrid.innerHTML = highlightsData.map(h => `
+                <div class="bg-neutral-900 border border-neutral-850 rounded-xl overflow-hidden shadow-md group hover:border-neutral-700 transition cursor-pointer" onclick="openVideoPlayer('${h.url}', '${h.title.replace(/'/g, "\\'")}')">
+                    <div class="relative aspect-video bg-neutral-950 overflow-hidden">
+                        <img src="${h.thumbnail}" alt="Clip preview" class="w-full h-full object-cover opacity-70 group-hover:scale-105 transition duration-500">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center text-neutral-950 text-lg shadow-xl group-hover:bg-amber-400 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-play ml-0.5"></i>
+                            </div>
+                        </div>
+                        <span class="absolute bottom-2 right-2 bg-neutral-950/90 border border-neutral-800 text-[10px] px-2 py-0.5 rounded font-mono">${h.length}</span>
+                    </div>
+                    <div class="p-3 bg-neutral-900">
+                        <h3 class="font-bold text-neutral-200 text-xs sm:text-sm line-clamp-2 group-hover:text-amber-400 transition">${h.title}</h3>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let currentBallsInOver = 1;
+        setInterval(() => {
+            currentBallsInOver++;
+            if (currentBallsInOver > 6) {
+                currentBallsInOver = 1;
+                let baseOvers = Math.floor(pa
